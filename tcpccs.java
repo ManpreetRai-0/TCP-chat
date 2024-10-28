@@ -6,7 +6,7 @@ import java.net.Socket;
 //      CLIENT CODE
 
 public class tcpccs{
-    private static Boolean running = true;
+    private static volatile Boolean running = true;
     private static Socket clientSocket;
 
     static class ClientChat implements Runnable{
@@ -41,10 +41,13 @@ public class tcpccs{
     }
     static class ClientInput implements Runnable{
         private Socket clientSocket;
+        private String userName;
         //private volatile Boolean running = true;
 
-        public ClientInput(Socket client){
+        public ClientInput(Socket client, String userName){
             this.clientSocket = client;
+            this.userName = userName;
+
         }
 
         @Override
@@ -62,7 +65,7 @@ public class tcpccs{
                             running = false;
                             break;
                         }
-                        outToServer.writeBytes(sentenceToServer + '\n');
+                        outToServer.writeBytes(userName + ": " + sentenceToServer + '\n');
 
                     }
                 }
@@ -78,6 +81,7 @@ public class tcpccs{
 
     private static Socket connecting(String address, int serverPort) throws Exception {
         Socket clientSocket = new Socket(address, serverPort);
+        System.out.println("Connected to the server. You can start sending messages.");
         return clientSocket;
     }
     
@@ -97,7 +101,7 @@ public class tcpccs{
         Thread messagesForClient = new Thread(serverMessages);
         messagesForClient.start();
 
-        ClientInput clientMessage = new ClientInput(clientSocket);
+        ClientInput clientMessage = new ClientInput(clientSocket, userName);
         Thread messagesForServer = new Thread(clientMessage);
         messagesForServer.start();
         
