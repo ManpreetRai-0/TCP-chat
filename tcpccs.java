@@ -6,12 +6,12 @@ import java.net.Socket;
 //      CLIENT CODE
 
 public class tcpccs{
+    //controls threads running
     private static volatile Boolean running = true;
-    private static Socket clientSocket;
+
 
     static class ClientChat implements Runnable{
         private Socket clientSocket;
-        //private volatile Boolean running = true;
 
         public ClientChat(Socket client){
             this.clientSocket = client;
@@ -24,6 +24,7 @@ public class tcpccs{
             try{
                 BufferedReader messageFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
+            //reading froms messages server
                 while (running) {
                         if((sentenceFromServer = messageFromServer.readLine()) != null){
                             System.out.println(sentenceFromServer);
@@ -42,7 +43,6 @@ public class tcpccs{
     static class ClientInput implements Runnable{
         private Socket clientSocket;
         private String userName;
-        //private volatile Boolean running = true;
 
         public ClientInput(Socket client, String userName){
             this.clientSocket = client;
@@ -56,11 +56,12 @@ public class tcpccs{
             String sentenceToServer;
             try{
                 BufferedReader clientMessage = new BufferedReader(new InputStreamReader(System.in));
-
+            
+            //running while server is open or till we quit, if we cant writebytes server is disconnected
                 while (running) {
                     DataOutputStream outToServer = new DataOutputStream(clientSocket.getOutputStream());
                     while((sentenceToServer = clientMessage.readLine()) != null){
-                        if(sentenceToServer.equals("/quit")){
+                        if(sentenceToServer.equalsIgnoreCase("/quit")){
                             clientSocket.close();
                             running = false;
                             break;
@@ -70,7 +71,8 @@ public class tcpccs{
                     }
                 }
             } catch(IOException e) {
-                System.out.println("Connection2");
+                System.out.println("Server Disconnected");
+                System.exit(1);
             }
 
         }
@@ -95,16 +97,19 @@ public class tcpccs{
         int serverPort = 12345;
 
 
-        Socket clientSocket = connecting(address, serverPort);
+        try{ 
+            Socket clientSocket = connecting(address, serverPort);
 
-        ClientChat serverMessages = new ClientChat(clientSocket);
-        Thread messagesForClient = new Thread(serverMessages);
-        messagesForClient.start();
+            ClientChat serverMessages = new ClientChat(clientSocket);
+            Thread messagesForClient = new Thread(serverMessages);
+            messagesForClient.start();
 
-        ClientInput clientMessage = new ClientInput(clientSocket, userName);
-        Thread messagesForServer = new Thread(clientMessage);
-        messagesForServer.start();
+            ClientInput clientMessage = new ClientInput(clientSocket, userName);
+            Thread messagesForServer = new Thread(clientMessage);
+            messagesForServer.start();
         
+        
+        //ctrl+c will stop all threads running and close the socket
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             running = false;  // Set running to false to stop loops
             try{
@@ -115,9 +120,13 @@ public class tcpccs{
             }
         }));
 
-
+        //wait for threads to stop running before main finishes
         messagesForClient.join();
         messagesForServer.join();
+        }catch(IOException e){
+            System.out.println("No Connection");
+            System.exit(1);
+        }
 
     }
 }
