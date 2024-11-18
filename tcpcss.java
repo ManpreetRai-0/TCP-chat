@@ -38,10 +38,11 @@ public class tcpcss {
                     }
                 }
             } catch (IOException e) {
-                System.out.println("Exception in client thread: " + e.getMessage());
+                if(!this.clientSocket.isClosed())
+                    System.out.println("Exception in client thread: " + e.getMessage());
             } finally {
                 if(!this.clientSocket.isClosed())
-                    cleanup();
+                    this.cleanup();
             }
         }
 
@@ -98,6 +99,7 @@ public class tcpcss {
                 if (listen != null && !listen.isClosed()) {
                     listen.close();
                 }
+                System.out.println("\nShutting Down");
             } catch (IOException e) {
                 System.out.println("Error closing socket: " + e.getMessage());
             }
@@ -107,18 +109,19 @@ public class tcpcss {
         int i=0;
         while (running) {
             try {
-                Socket clientSocket = listen.accept();
-                Client clientConnection = new Client(clientSocket);
-                Thread newThread = new Thread(clientConnection);
-                System.out.println("New connection, thread name is " + newThread.getName() + ", ip is: " + clientSocket.getInetAddress().getHostAddress() + ", port: " + clientSocket.getPort());
-                clientLookUp.put(clientSocket, "active");
-                System.out.println("Adding to list of sockets as " + i);
-                newThread.start();
-                i++;
-            } catch (IOException e) {
-                if (!running) {
-                    System.out.println();
+                if(!listen.isClosed()){
+                    Socket clientSocket = listen.accept();
+                    Client clientConnection = new Client(clientSocket);
+                    Thread newThread = new Thread(clientConnection);
+                    System.out.println("New connection, thread name is " + newThread.getName() + ", ip is: " + clientSocket.getInetAddress().getHostAddress() + ", port: " + clientSocket.getPort());
+                    clientLookUp.put(clientSocket, "active");
+                    System.out.println("Adding to list of sockets as " + i);
+                    newThread.start();
+                    i++;
                 }
+            } catch (IOException e) {
+                if(!listen.isClosed())
+                    System.out.println(e);
             } 
             
         }

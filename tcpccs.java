@@ -113,8 +113,8 @@ public class tcpccs{
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             running = false;  // Set running to false to stop loops
             try{
-                clientSocket.close();
                 System.out.println();
+                clientSocket.close();
             }catch (Exception e){
                 System.out.println("Error closing socket");
             }
